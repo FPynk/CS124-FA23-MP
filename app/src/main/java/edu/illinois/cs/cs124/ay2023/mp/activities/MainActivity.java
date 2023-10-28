@@ -91,6 +91,12 @@ public final class MainActivity extends AppCompatActivity
    */
   @Override
   public boolean onQueryTextChange(@NonNull String query) {
+    // Step 1: Filter the original list of summaries based on the query text
+    List<Summary> filteredSummaries = Summary.filter(summaries, query);
+
+    // Step 2: Update the adapter with the filtered list
+    listAdapter.setSummaries(filteredSummaries);
+
     return true;
   }
 
