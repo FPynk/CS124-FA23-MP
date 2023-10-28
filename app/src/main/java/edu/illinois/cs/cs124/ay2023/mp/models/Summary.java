@@ -103,14 +103,15 @@ public class Summary implements Comparable<Summary> {
 
     // Loop through list.
     for (Summary summary : list) {
-      // convert subject, number, and label to lowercase and check if they contain filter
-      if (summary.getNumber().toLowerCase().contains(lowerCaseFilter)
-          || summary.getSubject().toLowerCase().contains(lowerCaseFilter)
-          || summary.getLabel().toLowerCase().contains(lowerCaseFilter)) {
+      // convert summary to string to lowercase and check if they contain filter
+      if (summary.toString().toLowerCase().contains(lowerCaseFilter)) {
         // if yes, add to filtered list.
         filteredList.add(summary);
       }
     }
+    // natural sort using our compareTo function
+    Collections.sort(filteredList);
+
     // sort by index of the first occurrence of the filter string
     // basically if you see it first then its first
     // if both are at the same index then just use natural sort
