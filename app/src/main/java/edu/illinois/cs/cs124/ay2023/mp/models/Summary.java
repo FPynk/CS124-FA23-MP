@@ -111,10 +111,9 @@ public class Summary implements Comparable<Summary> {
         filteredList.add(summary);
       }
     }
-    // First, sort by natural order using compareTo from Summary class
-    Collections.sort(filteredList);
-
-    // Then, sort by index of the first occurrence of the filter string
+    // sort by index of the first occurrence of the filter string
+    // basically if you see it first then its first
+    // if both are at the same index then just use natural sort
     filteredList.sort(new Comparator<Summary>() {
       @Override
       public int compare(Summary o1, Summary o2) {
