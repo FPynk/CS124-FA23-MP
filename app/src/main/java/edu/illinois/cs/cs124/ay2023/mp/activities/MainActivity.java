@@ -73,6 +73,7 @@ public final class MainActivity extends AppCompatActivity
       (result) -> {
         try {
           summaries = result.getValue();
+          Collections.sort(summaries);
           listAdapter.setSummaries(summaries);
         } catch (Exception e) {
           e.printStackTrace();
