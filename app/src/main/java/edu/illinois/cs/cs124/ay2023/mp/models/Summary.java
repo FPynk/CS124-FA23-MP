@@ -2,6 +2,7 @@ package edu.illinois.cs.cs124.ay2023.mp.models;
 
 import androidx.annotation.NonNull;
 import org.jetbrains.annotations.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -71,10 +72,33 @@ public class Summary implements Comparable<Summary>{
 
   @Override
   public int compareTo(Summary o) {
+    // Compare by number (as integers)
+    int numberComparison = this.number.compareTo(o.number);
+    if (numberComparison != 0) {
+      return numberComparison;
+    }
+
+    // Compare by subject (entire string)
+    int subjectComparison = this.subject.compareTo(o.subject);
+    System.out.println("Subject comparison result: " + subjectComparison);
+    if (subjectComparison != 0) {
+      return subjectComparison;
+    }
     return 0;
   }
 
   public static List<Summary> filter(List<Summary> list, String filter) {
-    return list;
+    List<Summary> filteredList = new ArrayList<>();
+    // Simple for loop to cycle through all summaries
+    for (Summary summary : list) {
+      // Checks: subject, number and label, if any of these contain the filter then add to the list
+      if (summary.getSubject().contains(filter)
+          || summary.getNumber().contains(filter)
+          || summary.getLabel().contains(filter)) {
+        filteredList.add(summary);
+      }
+    }
+    // return the list
+    return filteredList;
   }
 }
