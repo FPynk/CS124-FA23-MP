@@ -3,6 +3,8 @@ package edu.illinois.cs.cs124.ay2023.mp.models;
 import androidx.annotation.NonNull;
 import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -10,7 +12,7 @@ import java.util.List;
  *
  * @noinspection unused
  */
-public class Summary implements Comparable<Summary>{
+public class Summary implements Comparable<Summary> {
   private String subject;
 
   /**
@@ -47,15 +49,18 @@ public class Summary implements Comparable<Summary>{
     return label;
   }
 
-  /** Create an empty Summary. */
-  public Summary() {}
+  /**
+   * Create an empty Summary.
+   */
+  public Summary() {
+  }
 
   /**
    * Create a Summary with the provided fields.
    *
    * @param setSubject the department for this Summary
-   * @param setNumber the number for this Summary
-   * @param setLabel the label for this Summary
+   * @param setNumber  the number for this Summary
+   * @param setLabel   the label for this Summary
    */
   public Summary(@NonNull String setSubject, @NonNull String setNumber, @NotNull String setLabel) {
     subject = setSubject;
@@ -63,7 +68,9 @@ public class Summary implements Comparable<Summary>{
     label = setLabel;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @NonNull
   @Override
   public String toString() {
@@ -88,17 +95,41 @@ public class Summary implements Comparable<Summary>{
   }
 
   public static List<Summary> filter(List<Summary> list, String filter) {
+    // output list
     List<Summary> filteredList = new ArrayList<>();
-    // Simple for loop to cycle through all summaries
+
+    // lowercase and trimming
+    String lowerCaseFilter = filter.toLowerCase().trim();
+
+    // Loop through list.
     for (Summary summary : list) {
-      // Checks: subject, number and label, if any of these contain the filter then add to the list
-      if (summary.getSubject().contains(filter)
-          || summary.getNumber().contains(filter)
-          || summary.getLabel().contains(filter)) {
+      // convert subject, number, and label to lowercase and check if they contain filter
+      if (summary.getNumber().toLowerCase().contains(lowerCaseFilter)
+          || summary.getSubject().toLowerCase().contains(lowerCaseFilter)
+          || summary.getLabel().toLowerCase().contains(lowerCaseFilter)) {
+        // if yes, add to filtered list.
         filteredList.add(summary);
       }
     }
-    // return the list
+    // First, sort by natural order using compareTo from Summary class
+    Collections.sort(filteredList);
+
+    // Then, sort by index of the first occurrence of the filter string
+    filteredList.sort(new Comparator<Summary>() {
+      @Override
+      public int compare(Summary o1, Summary o2) {
+        int index1 = o1.toString().toLowerCase().indexOf(lowerCaseFilter);
+        int index2 = o2.toString().toLowerCase().indexOf(lowerCaseFilter);
+
+        // If both indices are the same, use natural ordering for those elements
+        if (index1 == index2) {
+          return o1.compareTo(o2);
+        }
+
+        return Integer.compare(index1, index2);
+      }
+    });
+
     return filteredList;
   }
 }
