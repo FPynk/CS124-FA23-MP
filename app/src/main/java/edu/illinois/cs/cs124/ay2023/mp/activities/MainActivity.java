@@ -1,5 +1,6 @@
 package edu.illinois.cs.cs124.ay2023.mp.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.SearchView;
@@ -48,7 +49,10 @@ public final class MainActivity extends AppCompatActivity
     setTitle("Search Courses");
 
     // Setup the list adapter for the list of summaries
-    listAdapter = new SummaryListAdapter(summaries, this);
+    listAdapter = new SummaryListAdapter(summaries, this, summary -> {
+      Intent courseIntent = new Intent(this, CourseActivity.class);
+      startActivity(courseIntent);
+    });
 
     // Add the list to the layout
     RecyclerView recyclerView = findViewById(R.id.recycler_view);
