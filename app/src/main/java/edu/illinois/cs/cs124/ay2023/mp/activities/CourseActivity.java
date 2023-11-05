@@ -19,16 +19,21 @@ public class CourseActivity extends AppCompatActivity {
     setContentView(R.layout.activity_course);
 
     // Set up our UI
+    TextView titleTextView = findViewById(R.id.title);
     TextView descriptionTextView = findViewById(R.id.description);
-    runOnUiThread(() -> {
-      descriptionTextView.setText("Test");
-    });
     // Retrieve the Intent that started this activity and extract the summary data
     Intent intent = getIntent();
     try {
       // Deserialize the summary JSON to a Summary object
       String summaryJson = intent.getStringExtra("summary");
       Summary summary = OBJECT_MAPPER.readValue(summaryJson, Summary.class);
+
+      // Set the title
+      String title = summary.getSubject() + " "
+          + summary.getNumber()
+          + ": " + summary.getLabel();
+      runOnUiThread(() -> titleTextView.setText(title));
+
       // Use the client to get course details based on the summary
       CourseableApplication application = (CourseableApplication) getApplication();
       application.getClient().getCourse(summary, result -> {
