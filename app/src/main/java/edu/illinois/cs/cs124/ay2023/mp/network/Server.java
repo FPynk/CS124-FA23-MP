@@ -12,7 +12,6 @@ import edu.illinois.cs.cs124.ay2023.mp.models.Summary;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -267,9 +266,6 @@ public final class Server extends Dispatcher {
 
     // Build the list of summaries
     List<Summary> summaries = new ArrayList<>();
-
-    // Build the list of courses
-    List<Course> courses = new ArrayList<>();
 
     try {
       // Iterate through the list of JsonNodes returned by deserialization
