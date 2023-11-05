@@ -204,8 +204,10 @@ public final class Server extends Dispatcher {
   private String loadData() {
 
     // Load the JSON string
+    //noinspection CharsetObjectCanBeUsed
     String json =
-        new Scanner(Server.class.getResourceAsStream("/courses.json")).useDelimiter("\\A").next();
+        new Scanner(Server.class.getResourceAsStream("/courses.json"), "UTF-8")
+            .useDelimiter("\\A").next();
 
     // Build the list of summaries
     List<Summary> summaries = new ArrayList<>();
