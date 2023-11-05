@@ -20,7 +20,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
 import edu.illinois.cs.cs124.ay2023.mp.helpers.ResultMightThrow;
+import edu.illinois.cs.cs124.ay2023.mp.models.Course;
 import edu.illinois.cs.cs124.ay2023.mp.models.Summary;
+import kotlin.Result;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -61,6 +63,11 @@ public final class Client {
             },
             error -> callback.accept(new ResultMightThrow<>(error)));
     requestQueue.add(summaryRequest);
+  }
+
+  // TODO
+  public void getCourse(Summary summary, Consumer<ResultMightThrow<Course>> callback) {
+    callback.accept(new ResultMightThrow<>(new IllegalStateException("TODO")));
   }
 
   // You should not need to modify the code below
@@ -174,3 +181,5 @@ public final class Client {
         .start();
   }
 }
+
+

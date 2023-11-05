@@ -91,6 +91,7 @@ public class Summary implements Comparable<Summary> {
     if (subjectComparison != 0) {
       return subjectComparison;
     }
+
     return 0;
   }
 
