@@ -7,10 +7,12 @@ import androidx.annotation.NonNull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
+import edu.illinois.cs.cs124.ay2023.mp.models.Course;
 import edu.illinois.cs.cs124.ay2023.mp.models.Summary;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -36,6 +38,7 @@ import okhttp3.mockwebserver.RecordedRequest;
 public final class Server extends Dispatcher {
   /** List of summaries as a JSON string. */
   private final String summariesJSON;
+  private final String coursesJSON;
 
   /** Helper method to create a 200 HTTP response with a body. */
   private MockResponse makeOKJSONResponse(@NonNull String body) {
@@ -62,6 +65,56 @@ public final class Server extends Dispatcher {
     return makeOKJSONResponse(summariesJSON);
   }
 
+  private MockResponse getCourse(String path) {
+    // Split the path by '/' and remove empty parts caused by leading '/'
+    String[] parts = path.split("/");
+    List<String> validParts = new ArrayList<>();
+    for (String part : parts) {
+      if (!part.isEmpty()) {
+        validParts.add(part);
+      }
+    }
+
+    // Check if the path format is correct: ['', 'course', '{subject}', '{number}']
+    if (validParts.size() != 3 || !validParts.get(0).equalsIgnoreCase("course")) {
+      // If not, this is a bad request
+      return HTTP_BAD_REQUEST;
+    }
+
+    String subject = validParts.get(1);
+    String number = validParts.get(2);
+
+    // Print out for debugging
+    System.out.println("Searching for course: " + subject + " " + number);
+    try {
+      // Parse the JSON containing courses into a JsonNode
+      JsonNode coursesNode = OBJECT_MAPPER.readTree(coursesJSON);
+
+      // Iterate through each course in the JSON array
+      for (JsonNode courseNode : coursesNode) {
+        // Check if the course subject and number match the request
+        JsonNode subjectNode = courseNode.get("subject");
+        JsonNode numberNode = courseNode.get("number");
+        if (subjectNode != null && numberNode != null
+            && subjectNode.asText().equalsIgnoreCase(subject)
+            && numberNode.asText().equalsIgnoreCase(number)) {
+          // Match found, convert the course node to JSON string
+          String courseJSON = OBJECT_MAPPER.writeValueAsString(courseNode);
+          // Return OK response with course details
+          return makeOKJSONResponse(courseJSON);
+        }
+      }
+    } catch (IOException e) {
+      // Log the error and return an internal error response
+      e.printStackTrace();
+      return new MockResponse()
+          .setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
+          .setBody("500: Internal Error");
+    }
+
+    // If no course is found, return a not found response
+    return HTTP_NOT_FOUND;
+  }
   /**
    * HTTP request dispatcher.
    *
@@ -92,6 +145,8 @@ public final class Server extends Dispatcher {
         return new MockResponse().setBody("200: OK").setResponseCode(HttpURLConnection.HTTP_OK);
       } else if (path.equals("/summary/") && method.equals("GET")) {
         return getSummaries();
+      } else if (path.startsWith("/course/") && method.equals("GET")) {
+        return getCourse(path);
       } else {
         // Default is not found
         return HTTP_NOT_FOUND;
@@ -183,6 +238,7 @@ public final class Server extends Dispatcher {
 
     // Load data used by the server
     summariesJSON = loadData();
+    coursesJSON = loadCourseData();
 
     try {
       // This resource needs to outlive the try-catch
@@ -211,6 +267,10 @@ public final class Server extends Dispatcher {
 
     // Build the list of summaries
     List<Summary> summaries = new ArrayList<>();
+
+    // Build the list of courses
+    List<Course> courses = new ArrayList<>();
+
     try {
       // Iterate through the list of JsonNodes returned by deserialization
       JsonNode nodes = OBJECT_MAPPER.readTree(json);
@@ -223,6 +283,33 @@ public final class Server extends Dispatcher {
       return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(summaries);
     } catch (JsonProcessingException e) {
       throw new IllegalStateException(e);
+    }
+  }
+  /**
+   * Helper method to load full course data used by the server.
+   *
+   * @return the courses JSON string.
+   */
+  private String loadCourseData() {
+    // Load the JSON string
+    String json =
+        new Scanner(Server.class.getResourceAsStream("/courses.json"), "UTF-8")
+            .useDelimiter("\\A").next();
+
+    // Build the list of full course details
+    List<Course> courses = new ArrayList<>();
+    try {
+      // Parse the JSON to a JsonNode
+      JsonNode nodes = OBJECT_MAPPER.readTree(json);
+      for (JsonNode node : nodes) {
+        // Deserialize each JsonNode to a Course object
+        Course course = OBJECT_MAPPER.treeToValue(node, Course.class);
+        courses.add(course);
+      }
+      // Convert the List<Course> to a JSON string and return it
+      return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(courses);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to process courses.json", e);
     }
   }
 }
