@@ -219,6 +219,8 @@ public final class Server extends Dispatcher {
             .setResponseCode(HttpURLConnection.HTTP_OK);
       } else if (path.equals("/reset/") && method.equals("GET")) {
         // Used to reset the server during testing
+        // NEED TO RESET
+        loadRatings();
         return new MockResponse().setBody("200: OK").setResponseCode(HttpURLConnection.HTTP_OK);
       } else if (path.equals("/summary/") && method.equals("GET")) {
         return getSummaries();
