@@ -8,11 +8,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
 import edu.illinois.cs.cs124.ay2023.mp.models.Course;
+import edu.illinois.cs.cs124.ay2023.mp.models.Rating;
 import edu.illinois.cs.cs124.ay2023.mp.models.Summary;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -38,6 +41,7 @@ public final class Server extends Dispatcher {
   /** List of summaries as a JSON string. */
   private final String summariesJSON;
   private final String coursesJSON;
+  private Map<String, Rating> ratingMap;
 
   /** Helper method to create a 200 HTTP response with a body. */
   private MockResponse makeOKJSONResponse(@NonNull String body) {
@@ -113,6 +117,126 @@ public final class Server extends Dispatcher {
     // If no course is found, return a not found response
     return HTTP_NOT_FOUND;
   }
+  // TODO rating
+  private MockResponse getRating(String path) {
+    // Split the path by '/' and remove empty parts caused by leading '/'
+    String[] parts = path.split("/");
+    List<String> validParts = new ArrayList<>();
+    for (String part : parts) {
+      if (!part.isEmpty()) {
+        validParts.add(part);
+      }
+    }
+    // Check if the path format is correct: ['', 'course', '{subject}', '{number}']
+    if (validParts.size() != 3 || !validParts.get(0).equalsIgnoreCase("rating")) {
+      // If not, this is a bad request
+      return HTTP_BAD_REQUEST;
+    }
+
+    String subject = validParts.get(1);
+    String number = validParts.get(2);
+
+    // Construct the key to retrieve the rating
+    String key = subject + " " + number;
+
+    // Retrieve the rating from the map
+    Rating rating = ratingMap.get(key);
+
+    if (rating != null) {
+      // Rating found, convert the Rating object to JSON string
+      try {
+        String ratingJSON = OBJECT_MAPPER.writeValueAsString(rating);
+        // Return OK response with rating details
+        return makeOKJSONResponse(ratingJSON);
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+        return new MockResponse()
+            .setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
+            .setBody("500: Internal Error");
+      }
+    } else {
+      // No rating found for the given subject and number
+      try {
+        // Parse the JSON containing courses into a JsonNode
+        JsonNode coursesNode = OBJECT_MAPPER.readTree(coursesJSON);
+
+        // Iterate through each course in the JSON array
+        for (JsonNode courseNode : coursesNode) {
+          // Check if the course subject and number match the request
+          JsonNode subjectNode = courseNode.get("subject");
+          JsonNode numberNode = courseNode.get("number");
+          if (subjectNode != null && numberNode != null
+              && subjectNode.asText().equalsIgnoreCase(subject)
+              && numberNode.asText().equalsIgnoreCase(number)) {
+            // Match found, convert the course node to JSON string
+            String courseJSON = OBJECT_MAPPER.writeValueAsString(courseNode);
+            // Return OK response with course details
+            return makeOKJSONResponse(courseJSON);
+          }
+        }
+      } catch (IOException e) {
+        // Log the error and return an internal error response
+        e.printStackTrace();
+        return new MockResponse()
+            .setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
+            .setBody("500: Internal Error");
+      }
+
+      // If no course is found, return a not found response
+      return HTTP_NOT_FOUND;
+    }
+  }
+
+  private MockResponse postRating(RecordedRequest request) {
+    System.out.println("postRating");
+    // Can only be used once
+    String body = request.getBody().readUtf8();
+    try {
+      Rating rating = OBJECT_MAPPER.readValue(body, Rating.class);
+      String subject = rating.getSummary().getSubject();
+      String number =  rating.getSummary().getNumber();
+      boolean match = false;
+      // Check if the summary exists
+      try {
+        // Parse the JSON containing courses into a JsonNode
+        JsonNode coursesNode = OBJECT_MAPPER.readTree(coursesJSON);
+        // Iterate through each course in the JSON array
+        for (JsonNode courseNode : coursesNode) {
+          // Check if the course subject and number match the request
+          JsonNode subjectNode = courseNode.get("subject");
+          JsonNode numberNode = courseNode.get("number");
+          if (subjectNode != null && numberNode != null
+              && subjectNode.asText().equalsIgnoreCase(subject)
+              && numberNode.asText().equalsIgnoreCase(number)) {
+            // Match found, Have flag be true
+            match = true;
+          }
+        }
+      } catch (IOException e) {
+        // Log the error and return an internal error response
+        e.printStackTrace();
+      }
+
+      if (!match) {
+        return HTTP_NOT_FOUND;
+      }
+
+      // Save the rating for GET /rating/
+      String key = subject + " " + number;
+      ratingMap.put(key, rating);
+
+      String ratingPath = "/rating/" + rating.getSummary().getSubject()
+                        + "/" + rating.getSummary().getNumber();
+      System.out.println(ratingPath);
+      System.out.println(rating.getRating());
+      return new MockResponse()
+          .setResponseCode(HttpURLConnection.HTTP_MOVED_TEMP)
+          .setHeader("Location", ratingPath);
+    } catch (JsonProcessingException e) {
+      return HTTP_BAD_REQUEST;
+      //throw new RuntimeException(e);
+    }
+  }
   /**
    * HTTP request dispatcher.
    *
@@ -145,6 +269,10 @@ public final class Server extends Dispatcher {
         return getSummaries();
       } else if (path.startsWith("/course/") && method.equals("GET")) {
         return getCourse(path);
+      } else if (path.startsWith("/rating/") && method.equals("GET")) {
+        return getRating(path);
+      } else if (path.equals("/rating/") && method.equals("POST")) {
+        return postRating(request);
       } else {
         // Default is not found
         return HTTP_NOT_FOUND;
@@ -237,6 +365,7 @@ public final class Server extends Dispatcher {
     // Load data used by the server
     summariesJSON = loadData();
     coursesJSON = loadCourseData();
+    ratingMap = new HashMap<>();
 
     try {
       // This resource needs to outlive the try-catch

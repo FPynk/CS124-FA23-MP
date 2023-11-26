@@ -90,9 +90,31 @@ public final class Client {
       // Add the request to the queue to be executed
     requestQueue.add(courseRequest);
   }
-  // TODO MP3
   public void getRating(@NonNull Summary summary, Consumer<ResultMightThrow<Rating>> callback) {
-    callback.accept(new ResultMightThrow<>(new IllegalStateException()));
+    // Use the subject and number from the summary to construct the request URL
+    String url = CourseableApplication.SERVER_URL
+        + "/rating/" + summary.getSubject()
+        + "/" + summary.getNumber();
+
+    StringRequest ratingRequest =
+        new StringRequest(
+            Request.Method.GET,
+            url,
+            response -> {
+              try {
+                // Assuming 'Course' is the correct class to hold the course data
+                // and has a constructor that takes a JSON string
+                Rating rating = OBJECT_MAPPER.readValue(response, Rating.class);
+                callback.accept(new ResultMightThrow<>(rating));
+              } catch (JsonProcessingException e) {
+                // This exception handling assumes ResultMightThrow is a
+                // class that can take an exception as an argument
+                callback.accept(new ResultMightThrow<>(e));
+              }
+            },
+            error -> callback.accept(new ResultMightThrow<>(error)));
+    // Add the request to the queue to be executed
+    requestQueue.add(ratingRequest);
   }
 
   public void postRating(@NonNull Rating rating, Consumer<ResultMightThrow<Rating>> callback) {
