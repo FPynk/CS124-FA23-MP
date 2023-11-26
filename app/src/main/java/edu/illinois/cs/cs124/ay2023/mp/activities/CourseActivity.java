@@ -74,28 +74,24 @@ public class CourseActivity extends AppCompatActivity
 
   @Override
   public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
-    //if (fromUser) {
-      CourseableApplication application = (CourseableApplication) getApplication();
-      Intent intent = getIntent();
-      try {
-        // Deserialize the summary JSON to a Summary object
-        String summaryJson = intent.getStringExtra("summary");
-        Summary summary = OBJECT_MAPPER.readValue(summaryJson, Summary.class);
-        Rating newRating = new Rating(summary, rating);
-        application.getClient().postRating(newRating, result -> {
-          try {
-            Rating updatedRating = result.getValue();
-            runOnUiThread(() -> ratingBar.setRating(updatedRating.getRating()));
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        });
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    //    } else {
-    //      System.out.println("This shouldn't appear");
-    //    }
+    CourseableApplication application = (CourseableApplication) getApplication();
+    Intent intent = getIntent();
+    try {
+      // Deserialize the summary JSON to a Summary object
+      String summaryJson = intent.getStringExtra("summary");
+      Summary summary = OBJECT_MAPPER.readValue(summaryJson, Summary.class);
+      Rating newRating = new Rating(summary, rating);
+      application.getClient().postRating(newRating, result -> {
+        try {
+          Rating updatedRating = result.getValue();
+          runOnUiThread(() -> ratingBar.setRating(updatedRating.getRating()));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
 }
