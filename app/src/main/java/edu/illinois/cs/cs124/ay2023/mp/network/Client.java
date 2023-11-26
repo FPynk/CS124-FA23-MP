@@ -6,6 +6,7 @@ import static edu.illinois.cs.cs124.ay2023.mp.helpers.Helpers.OBJECT_MAPPER;
 import android.os.Build;
 import android.util.Log;
 import androidx.annotation.NonNull;
+import com.android.volley.AuthFailureError;
 import com.android.volley.Cache;
 import com.android.volley.ExecutorDelivery;
 import com.android.volley.Network;
@@ -20,7 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
 import edu.illinois.cs.cs124.ay2023.mp.helpers.ResultMightThrow;
-  import edu.illinois.cs.cs124.ay2023.mp.models.Course;
+import edu.illinois.cs.cs124.ay2023.mp.models.Course;
 import edu.illinois.cs.cs124.ay2023.mp.models.Rating;
 import edu.illinois.cs.cs124.ay2023.mp.models.Summary;
 import java.io.BufferedReader;
@@ -28,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -118,7 +120,47 @@ public final class Client {
   }
 
   public void postRating(@NonNull Rating rating, Consumer<ResultMightThrow<Rating>> callback) {
-    callback.accept(new ResultMightThrow<>(new IllegalStateException()));
+    // Use the subject and number from the summary to construct the request URL
+    // CourseableApplication.SERVER_URL
+    String url = CourseableApplication.SERVER_URL
+        + "/rating/"; //+ rating.getSummary().getSubject()
+        //+ "/" + rating.getSummary().getNumber();
+    System.out.println("postRating: " + url);
+    StringRequest ratingRequest =
+        new StringRequest(
+            Request.Method.POST,
+            url,
+            response -> {
+              callback.accept(new ResultMightThrow<>(rating));
+//              try {
+//                // Assuming server sends back the updated rating
+//                Rating updatedRating = OBJECT_MAPPER.readValue(response, Rating.class);
+//                callback.accept(new ResultMightThrow<>(rating));
+//              } catch (JsonProcessingException e) {
+//                // This exception handling assumes ResultMightThrow is a
+//                // class that can take an exception as an argument
+//                callback.accept(new ResultMightThrow<>(e));
+//              }
+            },
+            error -> callback.accept(new ResultMightThrow<>(error))) {
+          @Override
+          public String getBodyContentType() {
+            return "application/json; charset=utf-8;";
+          }
+          @Override
+          public byte[] getBody() throws AuthFailureError {
+            try {
+              // Convert rating object to a JSON string
+              String jsonBody = OBJECT_MAPPER.writeValueAsString(rating);
+              return jsonBody.getBytes(StandardCharsets.UTF_8);
+            } catch (JsonProcessingException e) {
+              throw new AuthFailureError("Failed to encode JSON", e);
+            }
+          }
+        };
+
+    // Add the request to the queue to be executed
+    requestQueue.add(ratingRequest);
   }
 
   // You should not need to modify the code below

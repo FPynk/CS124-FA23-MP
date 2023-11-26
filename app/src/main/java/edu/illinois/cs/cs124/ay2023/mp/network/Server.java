@@ -41,7 +41,7 @@ public final class Server extends Dispatcher {
   /** List of summaries as a JSON string. */
   private final String summariesJSON;
   private final String coursesJSON;
-  private Map<String, Rating> ratingMap;
+  private final Map<String, Rating> ratingMap = new HashMap<>();
 
   /** Helper method to create a 200 HTTP response with a body. */
   private MockResponse makeOKJSONResponse(@NonNull String body) {
@@ -119,6 +119,7 @@ public final class Server extends Dispatcher {
   }
   // TODO rating
   private MockResponse getRating(String path) {
+    System.out.println("getRating Server");
     // Split the path by '/' and remove empty parts caused by leading '/'
     String[] parts = path.split("/");
     List<String> validParts = new ArrayList<>();
@@ -141,8 +142,9 @@ public final class Server extends Dispatcher {
 
     // Retrieve the rating from the map
     Rating rating = ratingMap.get(key);
-
+    System.out.println("key: " + key);
     if (rating != null) {
+      System.out.println("rating: " + rating.getRating());
       // Rating found, convert the Rating object to JSON string
       try {
         String ratingJSON = OBJECT_MAPPER.writeValueAsString(rating);
@@ -155,74 +157,27 @@ public final class Server extends Dispatcher {
             .setBody("500: Internal Error");
       }
     } else {
-      // No rating found for the given subject and number
-      try {
-        // Parse the JSON containing courses into a JsonNode
-        JsonNode coursesNode = OBJECT_MAPPER.readTree(coursesJSON);
-
-        // Iterate through each course in the JSON array
-        for (JsonNode courseNode : coursesNode) {
-          // Check if the course subject and number match the request
-          JsonNode subjectNode = courseNode.get("subject");
-          JsonNode numberNode = courseNode.get("number");
-          if (subjectNode != null && numberNode != null
-              && subjectNode.asText().equalsIgnoreCase(subject)
-              && numberNode.asText().equalsIgnoreCase(number)) {
-            // Match found, convert the course node to JSON string
-            String courseJSON = OBJECT_MAPPER.writeValueAsString(courseNode);
-            // Return OK response with course details
-            return makeOKJSONResponse(courseJSON);
-          }
-        }
-      } catch (IOException e) {
-        // Log the error and return an internal error response
-        e.printStackTrace();
-        return new MockResponse()
-            .setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
-            .setBody("500: Internal Error");
-      }
-
       // If no course is found, return a not found response
       return HTTP_NOT_FOUND;
     }
   }
 
   private MockResponse postRating(RecordedRequest request) {
-    System.out.println("postRating");
+    System.out.println("postRating Server");
     // Can only be used once
     String body = request.getBody().readUtf8();
     try {
       Rating rating = OBJECT_MAPPER.readValue(body, Rating.class);
       String subject = rating.getSummary().getSubject();
       String number =  rating.getSummary().getNumber();
-      boolean match = false;
-      // Check if the summary exists
-      try {
-        // Parse the JSON containing courses into a JsonNode
-        JsonNode coursesNode = OBJECT_MAPPER.readTree(coursesJSON);
-        // Iterate through each course in the JSON array
-        for (JsonNode courseNode : coursesNode) {
-          // Check if the course subject and number match the request
-          JsonNode subjectNode = courseNode.get("subject");
-          JsonNode numberNode = courseNode.get("number");
-          if (subjectNode != null && numberNode != null
-              && subjectNode.asText().equalsIgnoreCase(subject)
-              && numberNode.asText().equalsIgnoreCase(number)) {
-            // Match found, Have flag be true
-            match = true;
-          }
-        }
-      } catch (IOException e) {
-        // Log the error and return an internal error response
-        e.printStackTrace();
-      }
+      String key = subject + " " + number;
 
-      if (!match) {
+      if (!ratingMap.containsKey(key)) {
+        System.out.println("key not found: " + key);
         return HTTP_NOT_FOUND;
       }
 
       // Save the rating for GET /rating/
-      String key = subject + " " + number;
       ratingMap.put(key, rating);
 
       String ratingPath = "/rating/" + rating.getSummary().getSubject()
@@ -272,6 +227,7 @@ public final class Server extends Dispatcher {
       } else if (path.startsWith("/rating/") && method.equals("GET")) {
         return getRating(path);
       } else if (path.equals("/rating/") && method.equals("POST")) {
+        System.out.println("Dispatch reached postRating");
         return postRating(request);
       } else {
         // Default is not found
@@ -365,7 +321,8 @@ public final class Server extends Dispatcher {
     // Load data used by the server
     summariesJSON = loadData();
     coursesJSON = loadCourseData();
-    ratingMap = new HashMap<>();
+    // fill map with default values
+    loadRatings();
 
     try {
       // This resource needs to outlive the try-catch
@@ -433,6 +390,30 @@ public final class Server extends Dispatcher {
       // Convert the List<Course> to a JSON string and return it
       return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(courses);
     } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to process courses.json", e);
+    }
+  }
+  private void loadRatings() {
+    String json =
+        new Scanner(Server.class.getResourceAsStream("/courses.json"), "UTF-8")
+        .useDelimiter("\\A").next();
+    try {
+      // Parse the JSON to a JsonNode
+      JsonNode nodes = OBJECT_MAPPER.readTree(json);
+      for (JsonNode node : nodes) {
+        // Deserialize each JsonNode to a Course object
+        Summary summary = OBJECT_MAPPER.readValue(node.toString(), Summary.class);
+
+        // Create a default Rating object
+        Rating rating = new Rating(summary, Rating.NOT_RATED);
+
+        // Construct the key (subject + " " + number)
+        String key = summary.getSubject() + " " + summary.getNumber();
+
+        // Add the default rating to the map
+        ratingMap.put(key, rating);
+      }
+    } catch (IOException e) {
       throw new IllegalStateException("Failed to process courses.json", e);
     }
   }
