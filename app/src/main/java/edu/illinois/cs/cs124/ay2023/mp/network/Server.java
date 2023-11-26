@@ -7,7 +7,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import edu.illinois.cs.cs124.ay2023.mp.activities.MainActivity;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
 import edu.illinois.cs.cs124.ay2023.mp.models.Course;
 import edu.illinois.cs.cs124.ay2023.mp.models.Rating;
