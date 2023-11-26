@@ -62,7 +62,7 @@ public final class MainActivity extends AppCompatActivity
         // Handle the exception (e.g., show an error message or log the error)
         return;
       }
-
+      System.out.println(summaryJson);
       // Add the serialized summary string as an extra to the intent
       courseIntent.putExtra("summary", summaryJson);
 

@@ -133,4 +133,6 @@ public class Summary implements Comparable<Summary> {
 
     return filteredList;
   }
+
 }
+

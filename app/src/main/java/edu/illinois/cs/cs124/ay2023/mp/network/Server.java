@@ -73,7 +73,6 @@ public final class Server extends Dispatcher {
         validParts.add(part);
       }
     }
-
     // Check if the path format is correct: ['', 'course', '{subject}', '{number}']
     if (validParts.size() != 3 || !validParts.get(0).equalsIgnoreCase("course")) {
       // If not, this is a bad request
