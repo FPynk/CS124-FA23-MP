@@ -3,9 +3,11 @@ package edu.illinois.cs.cs124.ay2023.mp.network;
 import static edu.illinois.cs.cs124.ay2023.mp.helpers.Helpers.CHECK_SERVER_RESPONSE;
 import static edu.illinois.cs.cs124.ay2023.mp.helpers.Helpers.OBJECT_MAPPER;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import edu.illinois.cs.cs124.ay2023.mp.activities.MainActivity;
 import edu.illinois.cs.cs124.ay2023.mp.application.CourseableApplication;
 import edu.illinois.cs.cs124.ay2023.mp.models.Course;
 import edu.illinois.cs.cs124.ay2023.mp.models.Rating;
@@ -38,6 +40,8 @@ import okhttp3.mockwebserver.RecordedRequest;
  * actual server, which could provide data for all course API clients.
  */
 public final class Server extends Dispatcher {
+  @SuppressWarnings("unused")
+  private static final String TAG = Server.class.getSimpleName();
   /** List of summaries as a JSON string. */
   private final String summariesJSON;
   private final String coursesJSON;
@@ -119,6 +123,7 @@ public final class Server extends Dispatcher {
   }
   // TODO rating
   private MockResponse getRating(String path) {
+    Log.d(TAG, "Server getRating called");
     System.out.println("getRating Server");
     // Split the path by '/' and remove empty parts caused by leading '/'
     String[] parts = path.split("/");
@@ -145,6 +150,7 @@ public final class Server extends Dispatcher {
     System.out.println("key: " + key);
     if (rating != null) {
       System.out.println("rating: " + rating.getRating());
+      Log.d(TAG, "Rating found: " + rating.getRating());
       // Rating found, convert the Rating object to JSON string
       try {
         String ratingJSON = OBJECT_MAPPER.writeValueAsString(rating);
@@ -163,6 +169,7 @@ public final class Server extends Dispatcher {
   }
 
   private MockResponse postRating(RecordedRequest request) {
+    Log.d(TAG, "Server postRating called");
     System.out.println("postRating Server");
     // Can only be used once
     String body = request.getBody().readUtf8();
@@ -179,7 +186,7 @@ public final class Server extends Dispatcher {
 
       // Save the rating for GET /rating/
       ratingMap.put(key, rating);
-
+      Log.d(TAG, "Rating for: " + key + " updated to: " + rating.getRating());
       String ratingPath = "/rating/" + rating.getSummary().getSubject()
                         + "/" + rating.getSummary().getNumber();
       System.out.println(ratingPath);

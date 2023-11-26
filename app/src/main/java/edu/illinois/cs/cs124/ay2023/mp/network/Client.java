@@ -93,6 +93,7 @@ public final class Client {
     requestQueue.add(courseRequest);
   }
   public void getRating(@NonNull Summary summary, Consumer<ResultMightThrow<Rating>> callback) {
+    Log.d(TAG, "Client getRating called");
     // Use the subject and number from the summary to construct the request URL
     String url = CourseableApplication.SERVER_URL
         + "/rating/" + summary.getSubject()
@@ -121,6 +122,7 @@ public final class Client {
 
   public void postRating(@NonNull Rating rating, Consumer<ResultMightThrow<Rating>> callback) {
     // Use the subject and number from the summary to construct the request URL
+    Log.d(TAG, "Client postRating called of rating: " + rating.getRating());
     // CourseableApplication.SERVER_URL
     String url = CourseableApplication.SERVER_URL
         + "/rating/"; //+ rating.getSummary().getSubject()
